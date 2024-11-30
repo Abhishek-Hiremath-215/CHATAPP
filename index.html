@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages for My Love</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #ffecd2, #fcb69f);
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #d35400;
+        }
+
+        #messageInput {
+            width: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff6f61;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #e74c3c;
+        }
+
+        .message {
+            margin: 10px auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+            width: 50%;
+        }
+
+        .message button {
+            background-color: #3498db;
+            color: white;
+            padding: 5px;
+        }
+
+        .message button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Messages for My Love ❤️</h1>
+    <form id="sendForm">
+        <input id="messageInput" type="text" placeholder="Write a message..." required>
+        <button type="submit">Send</button>
+        <button type="button" id="clearAll">Clear All</button>
+    </form>
+    <div id="messagesContainer"></div>
+
+    <script>
+        const apiBase = '/api';
+        const sendForm = document.getElementById('sendForm');
+        const messageInput = document.getElementById('messageInput');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const clearAllButton = document.getElementById('clearAll');
+
+        // Fetch and display messages
+        async function fetchMessages() {
+            const response = await fetch(`${apiBase}/messages`);
+            const data = await response.json();
+
+            messagesContainer.innerHTML = '';
+            if (data.messages && data.messages.length > 0) {
+                data.messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+                    messageDiv.innerHTML = `
+                        <p>${msg.content}</p>
+                        <button onclick="deleteMessage(${msg.id})">Delete</button>
+                    `;
+                    messagesContainer.appendChild(messageDiv);
+                });
+            } else {
+                messagesContainer.innerHTML = '<p>No messages yet!</p>';
+            }
+        }
+
+        // Send a new message
+        sendForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const content = messageInput.value.trim();
+            if (!content) return alert('Message cannot be empty!');
+
+            const response = await fetch(`${apiBase}/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content }),
+            });
+
+            if (response.ok) {
+                messageInput.value = '';
+                fetchMessages();
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Failed to send the message!');
+            }
+        });
+
+        // Delete a message
+        async function deleteMessage(id) {
+            const response = await fetch(`${apiBase}/delete/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                fetchMessages();
+            } else {
+                alert('Failed to delete the message!');
+            }
+        }
+
+        // Clear all messages
+        clearAllButton.addEventListener('click', async () => {
+            const confirmClear = confirm('Are you sure you want to clear all messages?');
+            if (!confirmClear) return;
+
+            const response = await fetch(`${apiBase}/clear`, { method: 'DELETE' });
+            if (response.ok) {
+                fetchMessages();
+            } else {
+                alert('Failed to clear messages!');
+            }
+        });
+
+        // Initial fetch
+        fetchMessages();
+    </script>
+</body>
+</html>
